@@ -28,16 +28,29 @@ def fetch_pro_matches(less_than=None):
 def insert_match(m):
     cursor.execute("""
         INSERT INTO matches (
-            match_id, start_time, team_radiant, team_dire,
-            radiant_score, dire_score, radiant_win, league_name
+            match_id, start_time,
+            team_radiant, team_dire,
+            radiant_team_id, dire_team_id,
+            radiant_score, dire_score,
+            radiant_win, league_name
         )
-        VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
-        ON CONFLICT (match_id) DO NOTHING
-    """, (
+        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+        ON CONFLICT (match_id) DO UPDATE SET
+            team_radiant = EXCLUDED.team_radiant,
+            team_dire = EXCLUDED.team_dire,
+            radiant_team_id = EXCLUDED.radiant_team_id,
+            dire_team_id = EXCLUDED.dire_team_id,
+            radiant_score = EXCLUDED.radiant_score,
+            dire_score = EXCLUDED.dire_score,
+            radiant_win = EXCLUDED.radiant_win,
+            league_name = EXCLUDED.league_name
+        """, (
         m["match_id"],
         datetime.fromtimestamp(m["start_time"]),
         m.get("radiant_name"),
         m.get("dire_name"),
+        m.get("radiant_team_id"),
+        m.get("dire_team_id"),
         m.get("radiant_score"),
         m.get("dire_score"),
         m.get("radiant_win"),
@@ -47,8 +60,7 @@ def insert_match(m):
 
 def main():
     last_id = None
-
-    for _ in range(50):  # paginate
+    for _ in range(100):  # paginate
         matches = fetch_pro_matches(last_id)
 
         if not matches:
